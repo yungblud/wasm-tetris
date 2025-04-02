@@ -1,5 +1,6 @@
 # wasm-tetris
 
+```sh
 wasm-tetris/
 ├── src/                # Rust 소스 코드
 │   ├── lib.rs          # WebAssembly 모듈 (Rust)
@@ -10,6 +11,7 @@ wasm-tetris/
 │   ├── index.js        # WebAssembly 로드 및 WebGL 관리
 │   └── (추가 파일 가능)
 ├── Cargo.toml          # Rust 프로젝트 설정
+```
 
 ## 📢 실행 방법
 1. wasm-pack build --target web 실행 (pkg 폴더 생성됨)
