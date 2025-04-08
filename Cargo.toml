@@ -5,6 +5,14 @@ edition = "2024"
 
 [dependencies]
 wasm-bindgen = "0.2"
+web-sys = { version = "0.3", features = [
+    "WebGlRenderingContext",
+    "Document",
+    "Window",
+    "HtmlCanvasElement",
+    "WebGlProgram",
+    "WebGlShader"
+] }
 
 [lib]
 crate-type = ["cdylib", "rlib"]
