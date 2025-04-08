@@ -34,18 +34,19 @@ function update(time) {
 
     current.y -= speed;
 
-    // 바닥에 닿으면 고정
-    if (current.y <= -0.9) {
+    // 바닥 또는 다른 블록과 충돌하면 고정
+    const hit_bottom = current.y <= -0.9;
+    const hit_block = check_collision(blocks, current);
+
+    if (hit_bottom || hit_block) {
         blocks.push({ ...current });
-        current = { x: 0, y: 1.0 }; // 새로운 블록 생성
+        current = { x: 0, y: 1.0 };
     }
 
-    // 화면 클리어
-    draw_square_at(current.x, current.y);
-
-    // 기존 블록 다시 그리기
+    // 화면 초기화 및 다시 그리기
+    draw_square_at(current.x, current.y); // 현재 블록
     for (const b of blocks) {
-        draw_square_at(b.x, b.y);
+        draw_square_at(b.x, b.y); // 기존 블록들
     }
 
     requestAnimationFrame(update);
@@ -59,6 +60,17 @@ function setup() {
     });
 
     requestAnimationFrame(update);
+}
+
+function check_collision(blocks, current) {
+    for (const b of blocks) {
+        const dy = b.y - current.y;
+        const dx = Math.abs(b.x - current.x);
+        if (dy < 0.2 && dy > 0 && dx < 0.2) {
+            return true;
+        }
+    }
+    return false;
 }
 
 init().then(setup);
