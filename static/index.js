@@ -1,8 +1,8 @@
-import init, { draw_square_at } from "../pkg/wasm_tetris.js";
+import init, { draw_square_at } from "./pkg/wasm_tetris.js";
 
-let x = 0;
-let y = 1.0; // 화면 상단부터 시작
-let speed = 0.01; // 낙하 속도
+let blocks = [];
+let current = { x: 0, y: 1.0 };
+let speed = 0.01;
 let lastTime = 0;
 
 let keys = {
@@ -13,15 +13,15 @@ let keys = {
 
 function handleInput() {
     if (keys.left) {
-        x -= 0.02;
+        current.x -= 0.05;
         keys.left = false;
     }
     if (keys.right) {
-        x += 0.02;
+        current.x += 0.05;
         keys.right = false;
     }
     if (keys.down) {
-        y -= 0.05;
+        current.y -= 0.05;
         keys.down = false;
     }
 }
@@ -32,9 +32,21 @@ function update(time) {
 
     handleInput();
 
-    y -= speed;
+    current.y -= speed;
 
-    draw_square_at(x, y);
+    // 바닥에 닿으면 고정
+    if (current.y <= -0.9) {
+        blocks.push({ ...current });
+        current = { x: 0, y: 1.0 }; // 새로운 블록 생성
+    }
+
+    // 화면 클리어
+    draw_square_at(current.x, current.y);
+
+    // 기존 블록 다시 그리기
+    for (const b of blocks) {
+        draw_square_at(b.x, b.y);
+    }
 
     requestAnimationFrame(update);
 }
