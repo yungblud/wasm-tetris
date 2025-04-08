@@ -1,6 +1,115 @@
 use wasm_bindgen::prelude::*;
 use web_sys::{HtmlCanvasElement, WebGlRenderingContext as GL, *};
 
+#[derive(Clone)]
+pub struct Block {
+    pub x: f32,
+    pub y: f32,
+}
+
+pub struct GameState {
+    current: Block,
+    blocks: Vec<Block>,
+}
+
+impl GameState {
+    pub fn new() -> Self {
+        Self {
+            current: Block { x: 0.0, y: 1.0 },
+            blocks: vec![],
+        }
+    }
+
+    pub fn update(&mut self) {
+        self.current.y -= 0.01;
+        let hit_bottom = self.current.y <= -0.9;
+        let hit_block = self.check_collision();
+
+        if hit_bottom || hit_block {
+            self.blocks.push(self.current.clone());
+            self.current = Block { x: 0.0, y: 1.0 };
+        }
+    }
+
+    fn check_collision(&self) -> bool {
+        for b in &self.blocks {
+            let dy = b.y - self.current.y;
+            let dx = (b.x - self.current.x).abs();
+            if dy < 0.2 && dy > 0.0 && dx < 0.2 {
+                return true;
+            }
+        }
+        false
+    }
+
+    pub fn move_left(&mut self) {
+        self.current.x -= 0.05;
+    }
+
+    pub fn move_right(&mut self) {
+        self.current.x += 0.05;
+    }
+
+    pub fn move_down(&mut self) {
+        self.current.y -= 0.05;
+    }
+
+    pub fn current(&self) -> Block {
+        self.current.clone()
+    }
+
+    pub fn blocks(&self) -> Vec<Block> {
+        self.blocks.clone()
+    }
+}
+
+#[wasm_bindgen]
+pub struct Game {
+    state: GameState,
+}
+
+#[wasm_bindgen]
+impl Game {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Game {
+        Game {
+            state: GameState::new(),
+        }
+    }
+
+    pub fn update(&mut self) {
+        self.state.update();
+    }
+
+    pub fn move_left(&mut self) {
+        self.state.move_left();
+    }
+
+    pub fn move_right(&mut self) {
+        self.state.move_right();
+    }
+
+    pub fn move_down(&mut self) {
+        self.state.move_down();
+    }
+
+    pub fn current_x(&self) -> f32 {
+        self.state.current().x
+    }
+
+    pub fn current_y(&self) -> f32 {
+        self.state.current().y
+    }
+
+    pub fn blocks_x(&self) -> Vec<f32> {
+        self.state.blocks().iter().map(|b| b.x).collect()
+    }
+
+    pub fn blocks_y(&self) -> Vec<f32> {
+        self.state.blocks().iter().map(|b| b.y).collect()
+    }
+}
+
 // JS에서 호출 할 수 있도록 설정
 #[wasm_bindgen]
 pub fn init_webgl() -> Result<(), JsValue> {
