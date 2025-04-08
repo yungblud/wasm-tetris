@@ -1,6 +1,9 @@
 use wasm_bindgen::prelude::*;
 use web_sys::{HtmlCanvasElement, WebGlRenderingContext as GL, *};
 
+const GRID_WIDTH: usize = 10;
+const GRID_EPSILON: f32 = 0.05; // 오차 허용
+
 #[derive(Clone)]
 pub struct Block {
     pub x: f32,
@@ -20,13 +23,49 @@ impl GameState {
         }
     }
 
+    fn clear_full_rows(&mut self) {
+        let mut rows: std::collections::HashMap<i32, Vec<&Block>> = std::collections::HashMap::new();
+
+        // y좌표를 정수화해서 각 줄에 블록 분류
+        for b in &self.blocks {
+            let row = (b.y / GRID_EPSILON).round() as i32;
+            rows.entry(row).or_default().push(b);
+        }
+
+        // 꽉 찬 줄만 추출
+        let full_rows: Vec<i32> = rows
+            .iter()
+            .filter(|(_, bs)| bs.len() >= GRID_WIDTH)
+            .map(|(y, _)| *y)
+            .collect();
+
+        if full_rows.is_empty() {
+            return;
+        }
+
+        // 해당 줄 제거
+        self.blocks.retain(|b| {
+            let row = (b.y / GRID_EPSILON).round() as i32;
+            !full_rows.contains(&row)
+        });
+
+        // 위의 블록들 아래로 이동
+        for b in &mut self.blocks {
+            let row = (b.y / GRID_EPSILON).round() as i32;
+            let count = full_rows.iter().filter(|r| row > **r).count() as f32;
+            b.y -= count * GRID_EPSILON;
+        }
+    }
+
     pub fn update(&mut self) {
         self.current.y -= 0.01;
+
         let hit_bottom = self.current.y <= -0.9;
         let hit_block = self.check_collision();
 
         if hit_bottom || hit_block {
             self.blocks.push(self.current.clone());
+            self.clear_full_rows(); // 🎯 이 줄 추가
             self.current = Block { x: 0.0, y: 1.0 };
         }
     }
