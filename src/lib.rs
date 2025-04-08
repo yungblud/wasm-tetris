@@ -133,3 +133,66 @@ fn link_program(gl: &WebGlRenderingContext, vert: &WebGlShader, frag: &WebGlShad
         Err(gl.get_program_info_log(&program).unwrap_or("Unknown link error".into()))
     }
 }
+
+#[wasm_bindgen]
+pub fn draw_square_at(x: f32, y: f32) -> Result<(), JsValue> {
+    let window = web_sys::window().ok_or("no window")?;
+    let document = window.document().ok_or("no document")?;
+    let canvas = document
+        .get_element_by_id("gameCanvas")
+        .ok_or("no canvas")?
+        .dyn_into::<HtmlCanvasElement>()?;
+    let gl: WebGlRenderingContext = canvas
+        .get_context("webgl")?
+        .ok_or("no webgl")?
+        .dyn_into()?;
+
+    let vert_code = r#"
+        attribute vec2 position;
+        uniform vec2 offset;
+        void main() {
+            gl_Position = vec4(position + offset, 0.0, 1.0);
+        }
+    "#;
+
+    let frag_code = r#"
+        void main() {
+            gl_FragColor = vec4(0.2, 0.8, 1.0, 1.0);
+        }
+    "#;
+
+    let vert_shader = compile_shader(&gl, GL::VERTEX_SHADER, vert_code)?;
+    let frag_shader = compile_shader(&gl, GL::FRAGMENT_SHADER, frag_code)?;
+    let program = link_program(&gl, &vert_shader, &frag_shader)?;
+    gl.use_program(Some(&program));
+
+    let vertices: [f32; 12] = [
+        -0.1, -0.1,
+         0.1, -0.1,
+        -0.1,  0.1,
+        -0.1,  0.1,
+         0.1, -0.1,
+         0.1,  0.1,
+    ];
+
+    let buffer = gl.create_buffer().ok_or("failed to create buffer")?;
+    gl.bind_buffer(GL::ARRAY_BUFFER, Some(&buffer));
+    unsafe {
+        let vert_array = js_sys::Float32Array::view(&vertices);
+        gl.buffer_data_with_array_buffer_view(GL::ARRAY_BUFFER, &vert_array, GL::STATIC_DRAW);
+    }
+
+    let pos_attrib = gl.get_attrib_location(&program, "position") as u32;
+    gl.vertex_attrib_pointer_with_i32(pos_attrib, 2, GL::FLOAT, false, 0, 0);
+    gl.enable_vertex_attrib_array(pos_attrib);
+
+    let offset_loc = gl.get_uniform_location(&program, "offset");
+    gl.uniform2f(offset_loc.as_ref(), x, y);
+
+    gl.clear_color(0.0, 0.0, 0.0, 1.0);
+    gl.clear(GL::COLOR_BUFFER_BIT);
+
+    gl.draw_arrays(GL::TRIANGLES, 0, 6);
+
+    Ok(())
+}
